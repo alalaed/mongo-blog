@@ -88,3 +88,5 @@ blogsRouter.delete("/:blogId"),
       console.log(error);
     }
   };
+
+export default blogsRouter;
