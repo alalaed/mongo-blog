@@ -4,46 +4,43 @@ import blogsModel from "./model.js";
 
 const blogsRouter = express.Router();
 
-blogsRouter.post("/"),
-  async (req, res, next) => {
-    try {
-      const newBlog = new blogsModel(req.body);
-      const { _id } = await newBlog.save();
-      res.status(201).send({ _id });
-    } catch (error) {
-      next(error);
-      console.log(error);
-    }
-  };
+blogsRouter.post("/", async (req, res, next) => {
+  try {
+    const newBlog = new blogsModel(req.body);
+    const { _id } = await newBlog.save();
+    res.status(201).send({ _id });
+  } catch (error) {
+    next(error);
+    console.log(error);
+  }
+});
 
-blogsRouter.get("/"),
-  async (req, res, next) => {
-    try {
-      const allBlogs = await blogsModel.find();
-      res.send(allBlogs);
-    } catch (error) {
-      next(error);
-      console.log(error);
-    }
-  };
+blogsRouter.get("/", async (req, res, next) => {
+  try {
+    const allBlogs = await blogsModel.find();
+    res.send(allBlogs);
+  } catch (error) {
+    next(error);
+    console.log(error);
+  }
+});
 
-blogsRouter.get("/:blogId"),
-  async (req, res, next) => {
-    try {
-      const blog = await blogsModel.findById(req.params.blogId);
-      if (blog) {
-        res.send(blog);
-      } else {
-        next(
-          createError(404),
-          `Blog with the ID ${req.params.blogId} is not found.`
-        );
-      }
-    } catch (error) {
-      next(error);
-      console.log(error);
+blogsRouter.get("/:blogId", async (req, res, next) => {
+  try {
+    const blog = await blogsModel.findById(req.params.blogId);
+    if (blog) {
+      res.send(blog);
+    } else {
+      next(
+        createError(404),
+        `Blog with the ID ${req.params.blogId} is not found.`
+      );
     }
-  };
+  } catch (error) {
+    next(error);
+    console.log(error);
+  }
+});
 
 blogsRouter.put("/:blogId", async (req, res, next) => {
   try {
@@ -71,22 +68,21 @@ blogsRouter.put("/:blogId", async (req, res, next) => {
   }
 });
 
-blogsRouter.delete("/:blogId"),
-  async (req, res, next) => {
-    try {
-      const deletedBlog = blogsModel.findByIdAndDelete(req.params.blogId);
-      if (deletedBlog) {
-        res.status(204).send();
-      } else {
-        next(
-          createError(404),
-          `Blog with the ID ${req.params.blogId} is not found.`
-        );
-      }
-    } catch (error) {
-      next(error);
-      console.log(error);
+blogsRouter.delete("/:blogId", async (req, res, next) => {
+  try {
+    const deletedBlog = blogsModel.findByIdAndDelete(req.params.blogId);
+    if (deletedBlog) {
+      res.status(204).send();
+    } else {
+      next(
+        createError(404),
+        `Blog with the ID ${req.params.blogId} is not found.`
+      );
     }
-  };
+  } catch (error) {
+    next(error);
+    console.log(error);
+  }
+});
 
 export default blogsRouter;
