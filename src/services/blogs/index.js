@@ -85,4 +85,33 @@ blogsRouter.delete("/:blogId", async (req, res, next) => {
   }
 });
 
+blogsRouter.post("/:blogId/comments", async (req, res, next) => {
+  try {
+    const blog = await blogsModel.findById(req.params.blogId, { _id: 0 });
+    console.log(blog);
+    if (blog) {
+      const comments = req.body;
+      console.log(comments);
+      const commentToInsert = {
+        ...comments,
+        commentDate: new Date(),
+      };
+      const modifiedBlog = await blogsModel.findByIdAndUpdate(
+        req.params.blogId,
+        { $push: { comments: commentToInsert } },
+        { new: true }
+      );
+      if (modifiedBlog) res.send(modifiedBlog);
+      else
+        next(createError(404, `Blog with id ${req.params.userId} not found!`));
+    } else {
+      next(
+        createError(404, `Blog with id ${req.body.bookId} has no comments!`)
+      );
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default blogsRouter;
