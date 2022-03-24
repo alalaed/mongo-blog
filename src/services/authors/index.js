@@ -1,88 +1,180 @@
-import express from "express";
-import createError from "http-errors";
-import blogsModel from "./model.js";
-import q2m from "query-to-mongo";
+import express from "express"
+import createError from "http-errors"
+import authorsModel from "./model.js"
+import blogsModel from "../blogs/model.js"
 
-const authorsRouter = express.Router();
-
-authorsRouter.get("/", async (req, res, next) => {
-  try {
-    const mongoQuery = q2m(req.query);
-    const total = await blogsModel.countDocuments(mongoQuery.criteria);
-    const blogs = await blogsModel
-      .find(mongoQuery.criteria, mongoQuery.options.fields)
-      .sort(mongoQuery.options.sort) //Mongo will ALWAYS do SORT, SKIP, LIMIT no matter what!
-      .skip(mongoQuery.options.skip, 0)
-      .limit(mongoQuery.options.limit, 20);
-    res.send({
-      links: mongoQuery.links(`http://localhost:3001/blogs`, total),
-      total,
-      totalPages: Math.ceil(total / mongoQuery.options.limit),
-      blogs,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
+const authorsRouter = express.Router()
 
 authorsRouter.post("/", async (req, res, next) => {
-  try {
-    const newBlog = new blogsModel(req.body);
-    const { _id } = await newBlog.save();
-    res.status(201).send({ _id });
-  } catch (error) {
-    next(error);
-    console.log(error);
-  }
-});
+    try {
+        const newAuthor = new authorsModel(req.body)
 
-authorsRouter.get("/:blogId", async (req, res, next) => {
-  try {
-    const blog = await blogsModel.findById(req.params.blogId);
-    if (blog) res.send(blog);
-    else
-      next(
-        createError(404),
-        `blog with the ID ${req.params.blogId} is not found.`
-      );
-  } catch (error) {
-    next(error);
-    console.log(error);
-  }
-});
+        const { _id } = await newAuthor.save()
+        res.status(201).send({ _id })
+    } catch (error) {
+        next(error)
+    }
+})
 
-authorsRouter.put("/:blogId", async (req, res, next) => {
-  try {
-    const updatedBlog = await blogsModel.findByIdAndUpdate(
-      req.params.blogId, // WHO
-      req.body, // HOW
-      { new: true, runValidators: true } // OPTIONS by default findByIdAndUpdate returns the record pre-modification, if you want to get back the newly updated record you should use the option new: true
-      // by default validation is off here, if you want to have it --> runValidators: true as an option
-    );
+authorsRouter.get("/", async (req, res, next) => {
+    try {
+        const authors = await authorsModel.find()
+        res.send(authors)
+    } catch (error) {
+        next(error)
+    }
+})
 
-    // ****************** ALTERNATIVE METHOD *******************
-    // const blog = await blogsModel.findById(req.params.blogId)
+authorsRouter.get("/:authorId", async (req, res, next) => {
+    try {
+        const author = await authorsModel.findById(req.params.authorId)
+        if (author) {
+            res.send(author)
+        } else {
+            next(createError(404, `Author with id ${req.params.authorId} not found!`))
+        }
+    } catch (error) {
+        next(error)
+    }
+})
 
-    // blog.firstName = "John"
+authorsRouter.put("/:authorId", async (req, res, next) => {
+    try {
+        const updatedAuthor = await authorsModel.findByIdAndUpdate(
+            req.params.authorId,
+            req.body,
+            { new: true, runValidators: true }
+        )
 
-    // await blog.save()
+        if (updatedAuthor) {
+            res.send(updatedAuthor)
+        } else {
+            next(createError(404, `Author with id ${req.params.authorId} not found!`))
+        }
+    } catch (error) {
+        next(error)
+    }
+})
 
-    if (updatedBlog) res.send(updatedBlog);
-    else next(createError(404, `blog with id ${req.params.blogId} not found!`));
-  } catch (error) {
-    next(error);
-  }
-});
+authorsRouter.delete("/:authorId", async (req, res, next) => {
+    try {
+        const deletedAuthor = await authorsModel.findByIdAndDelete(req.params.authorId)
+        if (deletedAuthor) {
+            res.status(204).send()
+        } else {
+            next(createError(404, `Author with id ${req.params.authorId} not found!`))
+        }
+    } catch (error) {
+        next(error)
+    }
+})
 
-authorsRouter.delete("/:blogId", async (req, res, next) => {
-  try {
-    const deletedBlogs = await blogsModel.findByIdAndDelete(req.params.blogId);
-    if (deletedBlogs) res.status(204).send();
-    else next(createError(404, `Blog with id ${req.params.blogId} not found!`));
-  } catch (error) {
-    next(error);
-    console.log(error);
-  }
-});
+authorsRouter.post("/:authorId/blogs", async (req, res, next) => {
+    try {
+        const author = await authorsModel.findById(req.body.authorsId, { _id: 0 })
+        if (blogs) {
 
-export default authorsRouter;
+            const blogToInsert = {
+                ...writtenBlog.toObject(),
+                purchaseDate: new Date(),
+            }
+
+            const modifiedUser = await authorsModel.findByIdAndUpdate(
+                req.params.userId, // WHO
+                { $push: { purchaseHistory: bookToInsert } }, // HOW
+                { new: true, runValidators: true } // OPTIONS
+            )
+
+            if (modifiedUser) {
+                res.send(modifiedUser)
+            } else {
+                next(createError(404, `User with id ${req.params.userId} not found!`))
+            }
+        } else {
+            next(createError(404, `Book with id ${req.body.bookId} not found!`))
+        }
+    } catch (error) {
+        next(error)
+    }
+})
+
+authorsRouter.get("/:author/blogs", async (req, res, next) => {
+    try {
+        const author = await authorsModel.findById(req.params.authorsId)
+        if (author) {
+            res.send(author.blogs)
+        } else {
+            next(createError(404, `Author with id ${req.params.authorId} not found!`))
+        }
+    } catch (error) {
+        next(error)
+    }
+})
+
+authorsRouter.get("/:userId/purchaseHistory/:bookId", async (req, res, next) => {
+    try {
+        const user = await authorsModel.findById(req.params.userId)
+        if (user) {
+            const purchasedBook = user.purchaseHistory.find(book => book._id.toString() === req.params.bookId) // You CANNOT compare a string (req.params.bookId) with an ObjectID (book._id) --> we shall convert ObjectId into a string
+
+            if (purchasedBook) {
+                res.send(purchasedBook)
+            } else {
+                next(createError(404, `Book with id ${req.params.bookId} not found!`))
+            }
+        } else {
+            next(createError(404, `User with id ${req.params.userId} not found!`))
+        }
+    } catch (error) {
+        next(error)
+    }
+}) // retrieve single item from purchase history of specific user
+
+authorsRouter.put("/:userId/purchaseHistory/:bookId", async (req, res, next) => {
+    try {
+        // 1. Find user
+
+        const user = await authorsModel.findById(req.params.userId)
+        if (user) {
+            // 2. Modify user (with JS)
+
+            const index = user.purchaseHistory.findIndex(book => book._id.toString() === req.params.bookId)
+
+            if (index !== -1) {
+                user.purchaseHistory[index] = { ...user.purchaseHistory[index].toObject(), ...req.body }
+
+                // 3. Save it back
+
+                await user.save() // since user is a MONGOOSE DOCUMENT we can use .save()
+
+                res.send(user)
+            } else {
+                next(createError(404, `Book with id ${req.params.bookId} not found!`))
+            }
+        } else {
+            next(createError(404, `User with id ${req.params.userId} not found!`))
+        }
+    } catch (error) {
+        next(error)
+    }
+}) // modify single item in purchase history of specific user
+
+authorsRouter.delete("/:userId/purchaseHistory/:bookId", async (req, res, next) => {
+    try {
+        const modifiedUser = await authorsModel.findByIdAndUpdate(
+            req.params.userId, // WHO
+            { $pull: { purchaseHistory: { _id: req.params.bookId } } }, // HOW
+            { new: true }
+        )
+
+        if (modifiedUser) {
+            res.send(modifiedUser)
+        } else {
+            next(createError(404, `User with id ${req.params.userId} not found!`))
+        }
+    } catch (error) {
+        next(error)
+    }
+}) // delete single item from purchase history of specific user
+
+export default authorsRouter
